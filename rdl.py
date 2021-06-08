@@ -29,7 +29,7 @@ headers = {
     'Cookie': 'role=view',
 }
 
-location = 'ЛВЧ-2+Тында'
+location = 'ЛВЧ-2+Тында' # депо привязки
 filename = 'Наряд.docx'
 
 s = requests.session()
@@ -39,7 +39,7 @@ response = s.post(url=link, data=logpass, headers=headers).text
 def parsing_docx(filename):
     """
     получение наряда от диспетчера и распарсивание оного
-    :param filename: *.doc
+    :param filename: *.docx
     :return: None
     """
     doc = docx.Document(filename)
@@ -66,9 +66,9 @@ def parsing_carriage(carriage_number):
 
 def generate_file_name(day=''):
     """
-    генерация имени файл
+    генерация имени файла
     :param today: если day пустой - будет сегодняшняя дата. Формат - ГГГГ-ММ-ДД
-    :return: имя файла
+    :return: str - имя файла формата 'Наряд.ГГГГ.ММ.ДД.docx'
     """
     if not day:
         year, month, day = str(date.today()).split('-')
@@ -89,6 +89,12 @@ def find_number(paragraph: str):
 
 
 def find_prefix(carriage_number, get_date=''):
+    """
+    Поиск трехзначного префикса номера вагона
+    :param carriage_number: номер вагона
+    :param get_date:
+    :return: str вида 123-45678
+    """
     if not get_date:
         get_date = str(date.today())
     req = f'{url_invent}/1?search=&date={get_date}&branch=&depot={location}&carriage={carriage_number}&invent_status=&trains_status=&routes_processes_group='
@@ -98,23 +104,23 @@ def find_prefix(carriage_number, get_date=''):
         full_carriage_number = r['elem_list'][cur_elem[0]]['carriage_number']
         return full_carriage_number
     else:
-        return f'___-{carriage_number}'
+        return f'___-{carriage_number}' # если вагон не принадлежит депо привязки location
 
 
 def find_scheme(get_date=''):
     """
-    поиск id состава
+    поиск id состава по номеру состава
     :param get_date:
-    :return:
+    :return: list (номер состава, id состава)
     """
     if not get_date:
         get_date = str(date.today())
     req = f'{url_daily_statement}?search=&date={get_date}&branch=&depot={location}&carriage=&invent_status=&trains_status=&routes_processes_group='
     r = s.get(req).json()
-    routes = list(r['routes'])
+    routes = r['routes']
     for route in routes:
-        return [route['route'], route['register_id']]
+        yield ([route['route'], route['register_id']])
 
-
-print(find_scheme('2021-06-08'))
+for i in find_scheme('2021-06-08'):
+    print(i)
 # parsing_docx(filename=filename)
