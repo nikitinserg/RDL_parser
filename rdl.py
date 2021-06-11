@@ -1,8 +1,8 @@
-import requests
-import docx
 import re
-import json
 from datetime import date
+import docx
+import requests
+
 from login_password import logpass
 
 url = 'https://sumrv.rdl-telecom.com/'
@@ -13,6 +13,7 @@ trains = {'375': '375Э(ТЫНДА)',
           '364': '364Э',
           '81': '081Э',
           '97': '097Э',
+          '235': '235Э'
           }
 
 headers = {
@@ -45,15 +46,27 @@ def parsing_docx(filename):
     doc = docx.Document(filename)
     all_prg = doc.paragraphs
     for para in all_prg:
-        carriage_number = find_number(para.text)
-        if carriage_number:
+        type_of_paragraph = parsing_paragraph(para.text)
+        if type_of_paragraph == 'carriage':
+            carriage_number = find_number(para.text)
             carriage_number = str(carriage_number[0])
             para.text = para.text.replace(carriage_number, find_prefix(carriage_number))
+        elif type_of_paragraph == 'scheme':
+            scheme = find_scheme(para.text)
+            if scheme != '000':
+                print('id не найдено')
+            else:
+                para.text = para.text.replace(scheme, find_scheme_id(scheme))
         print(para.text)
 
 
-def parsing_rdl():
-    pass
+def parsing_paragraph(paragraph: str):
+    if re.findall(r"[0-9]{5}", paragraph):
+        return 'carriage'
+    elif re.search("Сх ", paragraph):
+        return 'scheme'
+    else:
+        return 'other'
 
 
 def parsing_daily_statement(location: str, date: str):
@@ -88,6 +101,21 @@ def find_number(paragraph: str):
     return carriage_number
 
 
+def find_scheme(paragraph: str):
+    """
+    поиск номера состава
+    :param paragraph: string
+    :return: 2-3 digit string
+    """
+    scheme_number = ''
+    if re.search("Сх ", paragraph):
+        scheme_number = paragraph.split()[1]
+        correct_scheme_name = trains[scheme_number]  # правильная запись номера состава
+        if correct_scheme_name:
+            return find_scheme_id(correct_scheme_name)
+    return '000' # не найдено
+
+
 def find_prefix(carriage_number, get_date=''):
     """
     Поиск трехзначного префикса номера вагона
@@ -107,9 +135,10 @@ def find_prefix(carriage_number, get_date=''):
         return f'___-{carriage_number}' # если вагон не принадлежит депо привязки location
 
 
-def find_scheme(get_date=''):
+def find_scheme_id(correct_scheme_name: str, get_date=''):
     """
     поиск id состава по номеру состава
+    :param correct_scheme_name:  номер состава в правильной нотации
     :param get_date:
     :return: list (номер состава, id состава)
     """
@@ -119,8 +148,11 @@ def find_scheme(get_date=''):
     r = s.get(req).json()
     routes = r['routes']
     for route in routes:
-        yield ([route['route'], route['register_id']])
+        if route['route'] == correct_scheme_name:
+            return route['register_id']
+    else:
+        return '_________'  # если состав не найден
 
-for i in find_scheme('2021-06-08'):
-    print(i)
-# parsing_docx(filename=filename)
+
+
+parsing_docx(filename=filename)
