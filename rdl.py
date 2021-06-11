@@ -63,6 +63,7 @@ def parsing_docx(filename):
                 scheme_id = find_scheme_id(correct_scheme)
                 para.text = para.text.replace(scheme, f'{scheme} __{scheme_id}__')
         print(para.text)
+    doc.save('N.docx')
 
 
 def parsing_paragraph(paragraph: str):
