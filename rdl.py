@@ -93,7 +93,9 @@ def parsing_carriage(carriage_number: str):
     skdu = inventarisation['skdu']['text'].lower()
     svnr = inventarisation['svnr']['text'].lower()
     carriage_inventarisation = ''
-    if conclusion != 'не оборудован':
+    if re.findall(r'не оборудован', conclusion):
+        carriage_inventarisation = 'Не оборудован'
+    else:
         if im != 'не оборудован':
             carriage_inventarisation += 'ИМ, '
         if skbspp != 'не оборудован':
@@ -102,8 +104,6 @@ def parsing_carriage(carriage_number: str):
             carriage_inventarisation += 'СКДУ, '
         if svnr != 'не оборудован':
             carriage_inventarisation += 'СВНР, '
-    else:
-        carriage_inventarisation = 'Не оборудован'
     return carriage_inventarisation
 
 
