@@ -52,11 +52,13 @@ def parsing_docx(filename):
             carriage_number = str(carriage_number[0])
             para.text = para.text.replace(carriage_number, find_prefix(carriage_number))
         elif type_of_paragraph == 'scheme':
-            scheme = find_scheme(para.text)
-            if scheme != '000':
+            scheme = find_scheme(para.text)[0]
+            correct_scheme = find_scheme(para.text)[1]
+            if correct_scheme == '000':
                 print('id не найдено')
             else:
-                para.text = para.text.replace(scheme, find_scheme_id(scheme))
+                scheme_id = find_scheme_id(correct_scheme)
+                para.text = para.text.replace(scheme, f'{scheme} __{scheme_id}__')
         print(para.text)
 
 
@@ -112,8 +114,9 @@ def find_scheme(paragraph: str):
         scheme_number = paragraph.split()[1]
         correct_scheme_name = trains[scheme_number]  # правильная запись номера состава
         if correct_scheme_name:
-            return find_scheme_id(correct_scheme_name)
-    return '000' # не найдено
+            return scheme_number, correct_scheme_name
+        else:
+            return '000' # не найдено
 
 
 def find_prefix(carriage_number, get_date=''):
@@ -140,7 +143,7 @@ def find_scheme_id(correct_scheme_name: str, get_date=''):
     поиск id состава по номеру состава
     :param correct_scheme_name:  номер состава в правильной нотации
     :param get_date:
-    :return: list (номер состава, id состава)
+    :return: str (id состава)
     """
     if not get_date:
         get_date = str(date.today())
@@ -149,9 +152,10 @@ def find_scheme_id(correct_scheme_name: str, get_date=''):
     routes = r['routes']
     for route in routes:
         if route['route'] == correct_scheme_name:
-            return route['register_id']
+            register_id = route['register_id']
+            return str(register_id)
     else:
-        return '_________'  # если состав не найден
+        return 'id_не_найден'  # если состав не найден
 
 
 
