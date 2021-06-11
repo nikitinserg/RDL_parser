@@ -50,7 +50,10 @@ def parsing_docx(filename):
         if type_of_paragraph == 'carriage':
             carriage_number = find_number(para.text)
             carriage_number = str(carriage_number[0])
-            para.text = para.text.replace(carriage_number, find_prefix(carriage_number))
+            full_number = find_prefix(carriage_number)
+            inventarisation = parsing_carriage(full_number)
+            full_number_plus_invent = f'{full_number}:{inventarisation}'
+            para.text = para.text.replace(carriage_number, full_number_plus_invent)
         elif type_of_paragraph == 'scheme':
             scheme = find_scheme(para.text)[0]
             correct_scheme = find_scheme(para.text)[1]
@@ -75,14 +78,39 @@ def parsing_daily_statement(location: str, date: str):
     pass
 
 
-def parsing_carriage(carriage_number):
-    pass
+def parsing_carriage(carriage_number: str):
+    """
+    ищет какое оборудование есть на вагоне
+    :param carriage_number:
+    :return: str
+    """
+    req = f'{url_invent}/{carriage_number}/result/list'
+    r = s.get(req).json()
+    inventarisation = (r['processes'][0]['blocks'])
+    conclusion = inventarisation['conclusion']['text'].lower()
+    im = inventarisation['im']['text'].lower()
+    skbspp = inventarisation['skbspp']['text'].lower()
+    skdu = inventarisation['skdu']['text'].lower()
+    svnr = inventarisation['svnr']['text'].lower()
+    carriage_inventarisation = ''
+    if conclusion != 'не оборудован':
+        if im != 'не оборудован':
+            carriage_inventarisation += 'ИМ, '
+        if skbspp != 'не оборудован':
+            carriage_inventarisation += 'СКБСПП, '
+        if skdu != 'не оборудован':
+            carriage_inventarisation += 'СКДУ, '
+        if svnr != 'не оборудован':
+            carriage_inventarisation += 'СВНР, '
+    else:
+        carriage_inventarisation = 'Не оборудован'
+    return carriage_inventarisation
 
 
 def generate_file_name(day=''):
     """
     генерация имени файла
-    :param today: если day пустой - будет сегодняшняя дата. Формат - ГГГГ-ММ-ДД
+    :param day: если day пустой - будет сегодняшняя дата. Формат - ГГГГ-ММ-ДД
     :return: str - имя файла формата 'Наряд.ГГГГ.ММ.ДД.docx'
     """
     if not day:
