@@ -85,26 +85,29 @@ def parsing_carriage(carriage_number: str):
     :param carriage_number:
     :return: str
     """
-    req = f'{url_invent}/{carriage_number}/result/list'
-    r = s.get(req).json()
-    inventarisation = (r['processes'][0]['blocks'])
-    conclusion = inventarisation['conclusion']['text'].lower()
-    im = inventarisation['im']['text'].lower()
-    skbspp = inventarisation['skbspp']['text'].lower()
-    skdu = inventarisation['skdu']['text'].lower()
-    svnr = inventarisation['svnr']['text'].lower()
     carriage_inventarisation = ''
-    if re.findall(r'не оборудован', conclusion):
-        carriage_inventarisation = 'Не оборудован'
-    else:
-        if im != 'не оборудован':
-            carriage_inventarisation += 'ИМ, '
-        if skbspp != 'не оборудован':
-            carriage_inventarisation += 'СКБСПП, '
-        if skdu != 'не оборудован':
-            carriage_inventarisation += 'СКДУ, '
-        if svnr != 'не оборудован':
-            carriage_inventarisation += 'СВНР, '
+    if carriage_number[0] == '_':  # депо привязки не выяснено
+        carriage_inventarisation = '_?________?_'
+    else:  # депо привязки == location
+        req = f'{url_invent}/{carriage_number}/result/list'
+        r = s.get(req).json()
+        inventarisation = (r['processes'][0]['blocks'])
+        conclusion = inventarisation['conclusion']['text'].lower()
+        im = inventarisation['im']['text'].lower()
+        skbspp = inventarisation['skbspp']['text'].lower()
+        skdu = inventarisation['skdu']['text'].lower()
+        svnr = inventarisation['svnr']['text'].lower()
+        if re.findall(r'не оборудован|not_equipped_to_it', conclusion):
+            carriage_inventarisation = 'Не оборудован'
+        else:
+            if im != 'не оборудован':
+                carriage_inventarisation += 'ИМ, '
+            if skbspp != 'не оборудован':
+                carriage_inventarisation += 'СКБСПП, '
+            if skdu != 'не оборудован':
+                carriage_inventarisation += 'СКДУ, '
+            if svnr != 'не оборудован':
+                carriage_inventarisation += 'СВНР, '
     return carriage_inventarisation
 
 
