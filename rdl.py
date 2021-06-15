@@ -8,6 +8,7 @@ from login_password import logpass
 url = 'https://sumrv.rdl-telecom.com/'
 link = 'https://sumrv.rdl-telecom.com/api/sumrv-1/carriages/auth'
 url_invent = 'https://sumrv.rdl-telecom.com/api/sumrv-1/carriages/kit/invent'
+url_toprof = 'https://sumrv.rdl-telecom.com/api/sumrv-1/carriages/kit/toprof'
 url_daily_statement = 'https://sumrv.rdl-telecom.com/api/sumrv-1/carriages/daily_statement'
 trains = {'375': '375Э(ТЫНДА)',
           '364': '364Э',
@@ -31,7 +32,7 @@ headers = {
 }
 
 location = 'ЛВЧ-2+Тында' # депо привязки
-# filename = 'Наряд.docx'
+filename = 'Наряд.docx'
 
 s = requests.session()
 response = s.post(url=link, data=logpass, headers=headers).text
@@ -52,7 +53,8 @@ def parsing_docx(filename):
             carriage_number = str(carriage_number[0])
             full_number = find_prefix(carriage_number)
             inventarisation = parsing_carriage(full_number)
-            full_number_plus_invent = f'{full_number}:{inventarisation}'
+            toprof = parsing_toprof(full_number)
+            full_number_plus_invent = f'{toprof} {full_number}:{inventarisation}'
             para.text = para.text.replace(carriage_number, full_number_plus_invent)
         elif type_of_paragraph == 'scheme':
             scheme = find_scheme(para.text)[0]
@@ -77,6 +79,29 @@ def parsing_paragraph(paragraph: str):
 
 def parsing_daily_statement(location: str, date: str):
     pass
+
+
+def parsing_toprof(carriage_number: str):
+    """
+    Проверка, был ли сделан ТОпроф
+    :param carriage_number:
+    :return: str
+    """
+    if carriage_number[0] == '_':  # депо привязки не выяснено
+        return '?'
+    else:  # депо привязки == location
+        req = f'{url_toprof}/{carriage_number}/result/list'
+        r = s.get(req).json()
+        if r['processes']:
+            toprof = (r['processes'][0]['status'])
+            if toprof == 'in_progress':
+                return '*'
+            elif toprof == 'waiting_for_the_act':
+                return '+'
+            else:
+                return '-'
+        else:
+            return '-'
 
 
 def parsing_carriage(carriage_number: str):
@@ -190,5 +215,4 @@ def find_scheme_id(correct_scheme_name: str, get_date=''):
         return 'id_не_найден'  # если состав не найден
 
 
-
-# parsing_docx(filename=filename)
+parsing_docx(filename=filename)
