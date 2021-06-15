@@ -31,7 +31,7 @@ headers = {
 }
 
 location = 'ЛВЧ-2+Тында' # депо привязки
-filename = 'Наряд.docx'
+# filename = 'Наряд.docx'
 
 s = requests.session()
 response = s.post(url=link, data=logpass, headers=headers).text
@@ -191,4 +191,4 @@ def find_scheme_id(correct_scheme_name: str, get_date=''):
 
 
 
-parsing_docx(filename=filename)
+# parsing_docx(filename=filename)
