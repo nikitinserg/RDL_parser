@@ -65,7 +65,7 @@ def parsing_docx(filename):
                 scheme_id = find_scheme_id(correct_scheme)
                 para.text = para.text.replace(scheme, f'{scheme} __{scheme_id}__')
         print(para.text)
-    doc.save('N.docx')
+    doc.save(generate_file_name())
 
 
 def parsing_paragraph(paragraph: str):
@@ -95,11 +95,11 @@ def parsing_toprof(carriage_number: str):
         if r['processes']:
             toprof = (r['processes'][0]['status'])
             if toprof == 'in_progress':
-                return '*'
+                return '*'  # надо провести ТОпроф
             elif toprof == 'waiting_for_the_act':
-                return '+'
+                return '+'  # ТОпроф пройден
             else:
-                return '-'
+                return '-'  # не надо проводить ТОпроф
         else:
             return '-'
 
@@ -126,13 +126,13 @@ def parsing_carriage(carriage_number: str):
             carriage_inventarisation = 'Не оборудован'
         else:
             if im != 'не оборудован':
-                carriage_inventarisation += 'ИМ, '
+                carriage_inventarisation += 'им,'
             if skbspp != 'не оборудован':
-                carriage_inventarisation += 'СКБСПП, '
+                carriage_inventarisation += 'скб,'
             if skdu != 'не оборудован':
-                carriage_inventarisation += 'СКДУ, '
+                carriage_inventarisation += 'скду,'
             if svnr != 'не оборудован':
-                carriage_inventarisation += 'СВНР, '
+                carriage_inventarisation += 'свнр,'
     return carriage_inventarisation
 
 
