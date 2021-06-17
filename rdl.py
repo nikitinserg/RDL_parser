@@ -1,8 +1,7 @@
 import re
-from datetime import date
 import docx
 import requests
-
+from datetime import date
 from login_password import logpass
 
 url = 'https://sumrv.rdl-telecom.com/'
@@ -88,11 +87,14 @@ def is_inventarised(carriage_number: str):
     """
     req = f'{url_invent}/{carriage_number}/result/list'
     r = s.get(req).json()
-    invent_status = (r['processes'][0]['status'])
-    if invent_status == 'not_produced':
-        return False
-    else:
+    if carriage_number[0] == '_':  # депо привязки не выяснено
         return True
+    else:
+        invent_status = (r['processes'][0]['status'])
+        if invent_status == 'not_produced':
+            return False
+        else:
+            return True
 
 
 def parsing_toprof(carriage_number: str):
