@@ -54,7 +54,10 @@ def parsing_docx(filename):
             full_number = find_prefix(carriage_number)
             inventarisation = parsing_carriage(full_number)
             toprof = parsing_toprof(full_number)
-            full_number_plus_invent = f'{toprof} {full_number}:{inventarisation}'
+            if is_inventarised(full_number):
+                full_number_plus_invent = f'{toprof} {full_number}:{inventarisation}'
+            else:
+                full_number_plus_invent = f'!!! {full_number}: не инвентаризован!!!'
             para.text = para.text.replace(carriage_number, full_number_plus_invent)
         elif type_of_paragraph == 'scheme':
             scheme = find_scheme(para.text)[0]
@@ -77,8 +80,19 @@ def parsing_paragraph(paragraph: str):
         return 'other'
 
 
-def parsing_daily_statement(location: str, date: str):
-    pass
+def is_inventarised(carriage_number: str):
+    """
+    Проверка, был ли инвентаризован вагон
+    :param carriage_number:
+    :return:  True - был инвентаризован, False - не был
+    """
+    req = f'{url_invent}/{carriage_number}/result/list'
+    r = s.get(req).json()
+    invent_status = (r['processes'][0]['status'])
+    if invent_status == 'not_produced':
+        return False
+    else:
+        return True
 
 
 def parsing_toprof(carriage_number: str):
