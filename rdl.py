@@ -30,7 +30,7 @@ headers = {
     'Cookie': 'role=view',
 }
 
-location = 'ЛВЧ-2+Тында' # депо привязки
+location = 'ЛВЧ-2+Тында'  # депо привязки
 filename = 'Наряд.docx'
 
 s = requests.session()
@@ -71,6 +71,11 @@ def parsing_docx(filename):
 
 
 def parsing_paragraph(paragraph: str):
+    """
+    Определяем регуляркой что записано в параграфе - номер вагона, номер состава или что-то другое
+    :param paragraph:
+    :return: str
+    """
     if re.findall(r"[0-9]{5}", paragraph):
         return 'carriage'
     elif re.search("Сх ", paragraph):
@@ -79,7 +84,7 @@ def parsing_paragraph(paragraph: str):
         return 'other'
 
 
-def is_inventarised(carriage_number: str):
+def is_inventarised(carriage_number: str) -> bool:
     """
     Проверка, был ли инвентаризован вагон
     :param carriage_number:
@@ -170,7 +175,7 @@ def find_number(paragraph: str):
     """
     поиск номера вагона в параграфе
     :param paragraph: string
-    :return: 5 digit number
+    :return: 5 digit string
     """
     carriage_number = re.findall(r"[0-9]{5}", paragraph)
     return carriage_number
