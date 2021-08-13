@@ -4,21 +4,35 @@ import requests
 from datetime import date
 from login_password import logpass
 
+NO_INVENTARISATION_VARIANTS = (
+    'не оборудован',
+    'not_equipped_to_it',
+)
+
+NO_EQUIPMENT_VARIANTS = (
+    'не оборудован',
+    'нет',
+    'отсутствует',
+    'отсутствуют.',
+    'не оборудованно',
+)
+
 url = 'https://sumrv.rdl-telecom.com/'
-link = 'https://sumrv.rdl-telecom.com/api/sumrv-1/carriages/auth'
-url_invent = 'https://sumrv.rdl-telecom.com/api/sumrv-1/carriages/kit/invent'
-url_toprof = 'https://sumrv.rdl-telecom.com/api/sumrv-1/carriages/kit/toprof'
-url_daily_statement = 'https://sumrv.rdl-telecom.com/api/sumrv-1/carriages/daily_statement'
+main_api_link = 'https://sumrv.rdl-telecom.com/api/sumrv-1/carriages'
+link = f'{main_api_link}/auth'
+url_invent = f'{main_api_link}/kit/invent'
+url_toprof = f'{main_api_link}/kit/toprof'
+url_daily_statement = f'{main_api_link}/daily_statement'
 trains = {'375': '375Э(ТЫНДА)',
           '364': '364Э',
           '81': '081Э',
           '97': '097Э',
-          '235': '235Э'
+          '235': '235Э',
           }
 
 headers = {
     'Host': 'sumrv.rdl-telecom.com',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0',  # noqa: E501
     'Accept': 'application/json, text/plain, */*',
     'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
     'Accept-Encoding': 'gzip, deflate, br',
@@ -37,13 +51,13 @@ s = requests.session()
 response = s.post(url=link, data=logpass, headers=headers).text
 
 
-def parsing_docx(filename):
+def parsing_docx(input_filename, output_filename):
     """
     получение наряда от диспетчера и распарсивание оного
     :param filename: *.docx
     :return: None
     """
-    doc = docx.Document(filename)
+    doc = docx.Document(input_filename)
     all_prg = doc.paragraphs
     for para in all_prg:
         type_of_paragraph = parsing_paragraph(para.text)
@@ -62,17 +76,18 @@ def parsing_docx(filename):
             scheme = find_scheme(para.text)[0]
             correct_scheme = find_scheme(para.text)[1]
             if correct_scheme == '000':
-                print('id не найдено')
+                print('id не найден')
             else:
                 scheme_id = find_scheme_id(correct_scheme)
                 para.text = para.text.replace(scheme, f'{scheme} __{scheme_id}__')
         print(para.text)
-    doc.save(generate_file_name())
+    doc.save(output_filename)
 
 
 def parsing_paragraph(paragraph: str):
     """
-    Определяем регуляркой что записано в параграфе - номер вагона, номер состава или что-то другое
+    Определяем регуляркой что записано в параграфе -
+    номер вагона, номер состава или что-то другое
     :param paragraph:
     :return: str
     """
@@ -138,21 +153,21 @@ def parsing_carriage(carriage_number: str):
         req = f'{url_invent}/{carriage_number}/result/list'
         r = s.get(req).json()
         inventarisation = (r['processes'][0]['blocks'])
-        conclusion = inventarisation['conclusion']['text'].lower()
+        inventarisation_status = r['processes'][0]['status'].lower()
         im = inventarisation['im']['text'].lower()
         skbspp = inventarisation['skbspp']['text'].lower()
         skdu = inventarisation['skdu']['text'].lower()
         svnr = inventarisation['svnr']['text'].lower()
-        if re.findall(r'не оборудован|not_equipped_to_it', conclusion):
+        if inventarisation_status.lower() in NO_INVENTARISATION_VARIANTS:
             carriage_inventarisation = 'Не оборудован'
         else:
-            if im != 'не оборудован':
+            if im.lower() not in NO_EQUIPMENT_VARIANTS:
                 carriage_inventarisation += 'им,'
-            if skbspp != 'не оборудован':
+            if skbspp.lower() not in NO_EQUIPMENT_VARIANTS:
                 carriage_inventarisation += 'скб,'
-            if skdu != 'не оборудован':
+            if skdu.lower() not in NO_EQUIPMENT_VARIANTS:
                 carriage_inventarisation += 'скду,'
-            if svnr != 'не оборудован':
+            if svnr.lower() not in NO_EQUIPMENT_VARIANTS:
                 carriage_inventarisation += 'свнр,'
     return carriage_inventarisation
 
@@ -190,11 +205,14 @@ def find_scheme(paragraph: str):
     scheme_number = ''
     if re.search("Сх ", paragraph):
         scheme_number = paragraph.split()[1]
-        correct_scheme_name = trains[scheme_number]  # правильная запись номера состава
+        try:
+            correct_scheme_name = trains[scheme_number]  # правильная запись номера состава
+        except KeyError:
+            return '000'  # если номер состава вообще не наш или записан некорректно
         if correct_scheme_name:
             return scheme_number, correct_scheme_name
         else:
-            return '000' # не найдено
+            return '000'  # не найдено
 
 
 def find_prefix(carriage_number, get_date=''):
@@ -206,14 +224,14 @@ def find_prefix(carriage_number, get_date=''):
     """
     if not get_date:
         get_date = str(date.today())
-    req = f'{url_invent}/1?search=&date={get_date}&branch=&depot={location}&carriage={carriage_number}&invent_status=&trains_status=&routes_processes_group='
+    req = f'{url_invent}/1?search=&date={get_date}&branch=&depot={location}&carriage={carriage_number}&invent_status=&trains_status=&routes_processes_group='  # noqa: E501
     r = s.get(req).json()
     cur_elem = list(r['elem_list'].keys())
     if cur_elem:
         full_carriage_number = r['elem_list'][cur_elem[0]]['carriage_number']
         return full_carriage_number
     else:
-        return f'___-{carriage_number}' # если вагон не принадлежит депо привязки location
+        return f'___-{carriage_number}'  # если вагон не принадлежит депо привязки location
 
 
 def find_scheme_id(correct_scheme_name: str, get_date=''):
@@ -225,7 +243,7 @@ def find_scheme_id(correct_scheme_name: str, get_date=''):
     """
     if not get_date:
         get_date = str(date.today())
-    req = f'{url_daily_statement}?search=&date={get_date}&branch=&depot={location}&carriage=&invent_status=&trains_status=&routes_processes_group='
+    req = f'{url_daily_statement}?search=&date={get_date}&branch=&depot={location}&carriage=&invent_status=&trains_status=&routes_processes_group='  # noqa: E501
     r = s.get(req).json()
     routes = r['routes']
     for route in routes:
@@ -236,4 +254,4 @@ def find_scheme_id(correct_scheme_name: str, get_date=''):
         return 'id_не_найден'  # если состав не найден
 
 
-parsing_docx(filename=filename)
+parsing_docx(input_filename=filename, output_filename=generate_file_name())

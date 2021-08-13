@@ -1,0 +1,4 @@
+.idea
+venv
+login_password.py
+__pycache__/
