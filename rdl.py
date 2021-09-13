@@ -130,7 +130,7 @@ def parsing_toprof(carriage_number: str):
         r = s.get(req).json()
         if r['processes']:
             toprof = (r['processes'][0]['status'])
-            if toprof == 'in_progress':
+            if toprof == 'in_progress' or toprof == 'rejected':
                 return '*'  # надо провести ТОпроф
             elif toprof == 'waiting_for_the_act':
                 return '+'  # ТОпроф пройден
