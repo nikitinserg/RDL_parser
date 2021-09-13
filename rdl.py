@@ -22,6 +22,7 @@ main_api_link = 'https://sumrv.rdl-telecom.com/api/sumrv-1/carriages'
 link = f'{main_api_link}/auth'
 url_invent = f'{main_api_link}/kit/invent'
 url_toprof = f'{main_api_link}/kit/toprof'
+url_topred = f'{main_api_link}/kit/topred'
 url_daily_statement = f'{main_api_link}/daily_statement'
 trains = {'375': '375Э(ТЫНДА)',
           '364': '364Э',
@@ -67,11 +68,15 @@ def parsing_docx(input_filename, output_filename):
             full_number = find_prefix(carriage_number)
             inventarisation = parsing_carriage(full_number)
             toprof = parsing_toprof(full_number)
+            carriage_last_topred = last_topred_status(full_number)
             if is_inventarised(full_number):
                 full_number_plus_invent = f'{toprof} {full_number}:{inventarisation}'
             else:
                 full_number_plus_invent = f'!!! {full_number}: не инвентаризован!!!'
-            para.text = para.text.replace(carriage_number, full_number_plus_invent)
+            if carriage_last_topred == 'Ok':
+                para.text = para.text.replace(carriage_number, full_number_plus_invent)
+            else:
+                para.text = para.text.replace(carriage_number, full_number_plus_invent) + carriage_last_topred
         elif type_of_paragraph == 'scheme':
             scheme = find_scheme(para.text)[0]
             correct_scheme = find_scheme(para.text)[1]
@@ -252,6 +257,32 @@ def find_scheme_id(correct_scheme_name: str, get_date=''):
             return str(register_id)
     else:
         return 'id_не_найден'  # если состав не найден
+
+
+def last_topred_status(carriage_number):
+    """
+    проверка, не был ли на прошлом ТОпред обнаружен какой-нибудь косяк
+    :param carriage_number:
+    """
+    req = f'{url_topred}/{carriage_number}/result/list'
+    r = s.get(req).json()
+    if r['routes']:
+        im_eqip = r['routes'][0]['equip']['im']
+        im_equip_health = r['routes'][0]['equip_health']['im']
+        skb_equip = r['routes'][0]['equip']['skbspp']
+        skb_equip_health = r['routes'][0]['equip_health']['skbspp']
+        skdu_equip = r['routes'][0]['equip']['skdu']
+        skdu_equip_health = r['routes'][0]['equip_health']['skdu']
+        svnr_equip = r['routes'][0]['equip']['svnr']
+        svnr_equip_health = r['routes'][0]['equip_health']['svnr']
+
+        if im_eqip != im_equip_health or skb_equip != skb_equip_health or skdu_equip != skdu_equip_health or svnr_equip != svnr_equip_health:  # Если оборудовано, но неисправно
+            equip_status = r['routes'][0]['conclusion']
+            return f'Внимание! На прошлом ТОпроф было отмечено: {equip_status}'
+        else:
+            return 'Ok'
+    else:
+        return 'Ok'
 
 
 parsing_docx(input_filename=filename, output_filename=generate_file_name())
