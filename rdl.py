@@ -267,16 +267,12 @@ def last_topred_status(carriage_number):
     req = f'{url_topred}/{carriage_number}/result/list'
     r = s.get(req).json()
     if r['routes']:
-        im_eqip = r['routes'][0]['equip']['im']
-        im_equip_health = r['routes'][0]['equip_health']['im']
-        skb_equip = r['routes'][0]['equip']['skbspp']
-        skb_equip_health = r['routes'][0]['equip_health']['skbspp']
-        skdu_equip = r['routes'][0]['equip']['skdu']
-        skdu_equip_health = r['routes'][0]['equip_health']['skdu']
-        svnr_equip = r['routes'][0]['equip']['svnr']
-        svnr_equip_health = r['routes'][0]['equip_health']['svnr']
+        im_equip_health = r['routes'][0]['equip_health']['im'] != r['routes'][0]['equip']['im']
+        skb_equip_health = r['routes'][0]['equip_health']['skbspp'] != r['routes'][0]['equip']['skbspp']
+        skdu_equip_health = r['routes'][0]['equip_health']['skdu'] != r['routes'][0]['equip']['skdu']
+        svnr_equip_health = r['routes'][0]['equip_health']['svnr'] != r['routes'][0]['equip']['svnr']
 
-        if im_eqip != im_equip_health or skb_equip != skb_equip_health or skdu_equip != skdu_equip_health or svnr_equip != svnr_equip_health:  # Если оборудовано, но неисправно
+        if im_equip_health or skb_equip_health or skdu_equip_health or svnr_equip_health:  # Если оборудовано, но неисправно
             equip_status = r['routes'][0]['conclusion']
             return f'Внимание! На прошлом ТОпроф было отмечено: {equip_status}'
         else:
